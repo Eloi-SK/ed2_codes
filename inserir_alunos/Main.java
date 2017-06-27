@@ -1,6 +1,5 @@
 package main;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -63,7 +62,6 @@ public class Main {
 		channel.close();
 		raf.close();
 		in.close();
-		
 	}
 	public static void inserirAlunoFinal() throws IOException {
 		int mat;
