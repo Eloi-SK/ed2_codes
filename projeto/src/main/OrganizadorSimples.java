@@ -70,4 +70,21 @@ public class OrganizadorSimples implements IOrganizadorSimples {
 
 	}
 
+    @Override
+    public void showAlunos() throws IOException {
+        Aluno a;
+        int registros = (int) this.channel.size() / Aluno.tamanho;
+        for (int i = 0; i < registros; i++) {
+            ByteBuffer buffer = ByteBuffer.allocate(Aluno.tamanho);
+            this.channel.read(buffer, i * Aluno.tamanho);
+            a = Conversor.toAluno(buffer);
+            System.out.println("Matrícula: " + a.getMatric());
+            System.out.println("Nome: " + a.getNome());
+            System.out.println("Endereço: " + a.getEnde());
+            System.out.println("Email: " + a.getEmail());
+            System.out.println("Curso: " + a.getCurso());
+            System.out.println();
+        }
+    }
+
 }

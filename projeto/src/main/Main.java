@@ -32,6 +32,8 @@ public class Main {
 		orgSimples.addAluno(a);
 		orgSimples.addAluno(b);
 		
+                orgSimples.showAlunos();
+                
 		System.out.println("Pesquisando pela matrícula: 654321");
 		Aluno c = orgSimples.getAluno(654321);
 		
@@ -48,7 +50,7 @@ public class Main {
 		
 		System.out.println("Deletando matrícula: 654321");
 		if(orgSimples.deleteAluno(654321)) {
-			System.out.println("Matrícula deletada com sucesso");;
+			System.out.println("Matrícula deletada com sucesso");
 		}
 		else {
 			System.out.println("Matrícula não encontrada...");

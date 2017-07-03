@@ -9,5 +9,6 @@ public interface IOrganizadorSimples {
 	public void addAluno(Aluno a) throws IOException;
 	public Aluno getAluno(long matric) throws IOException;
 	public boolean deleteAluno(long matric) throws IOException;
+        public void showAlunos() throws IOException;
 
 }
