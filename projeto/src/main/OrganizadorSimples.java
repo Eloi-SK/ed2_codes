@@ -8,9 +8,9 @@ import java.nio.channels.FileChannel;
 
 import util.Conversor;
 import entidades.Aluno;
-import interfaces.IOrganizadorSimples;
+import interfaces.IOrganizador;
 
-public class OrganizadorSimples implements IOrganizadorSimples {
+public class OrganizadorSimples implements IOrganizador {
 	
 	private FileChannel channel;
 	
@@ -40,7 +40,7 @@ public class OrganizadorSimples implements IOrganizadorSimples {
 	}
 
 	@Override
-	public boolean deleteAluno(long matric) throws IOException {
+	public boolean delAluno(long matric) throws IOException {
 		Aluno a;
 		int indice = -1;
 		int registros = (int) this.channel.size() / Aluno.tamanho;
@@ -67,24 +67,5 @@ public class OrganizadorSimples implements IOrganizadorSimples {
 			this.channel.truncate(this.channel.size() - Aluno.tamanho);
 			return true;
 		}
-
 	}
-
-    @Override
-    public void showAlunos() throws IOException {
-        Aluno a;
-        int registros = (int) this.channel.size() / Aluno.tamanho;
-        for (int i = 0; i < registros; i++) {
-            ByteBuffer buffer = ByteBuffer.allocate(Aluno.tamanho);
-            this.channel.read(buffer, i * Aluno.tamanho);
-            a = Conversor.toAluno(buffer);
-            System.out.println("Matrícula: " + a.getMatric());
-            System.out.println("Nome: " + a.getNome());
-            System.out.println("Endereço: " + a.getEnde());
-            System.out.println("Email: " + a.getEmail());
-            System.out.println("Curso: " + a.getCurso());
-            System.out.println();
-        }
-    }
-
 }
