@@ -27,45 +27,50 @@ public class OrganizadorSimples implements IOrganizador {
 
 	@Override
 	public Aluno getAluno(long matric) throws IOException {
-		Aluno a;
-		int registros = (int) this.channel.size() / Aluno.tamanho;
-		for (int i = 0; i < registros; i++) {
+		long position = this.getPosition(matric);
+		if (position != -1) {
 			ByteBuffer buffer = ByteBuffer.allocate(Aluno.tamanho);
-			this.channel.read(buffer, i * Aluno.tamanho);
-			a = Conversor.toAluno(buffer);
-			if (a.getMatric() == matric)
-				return a;
+			this.channel.read(buffer, position);
+			return Conversor.toAluno(buffer);
 		}
 		return null;
 	}
 
 	@Override
 	public boolean delAluno(long matric) throws IOException {
-		Aluno a;
-		int indice = -1;
 		int registros = (int) this.channel.size() / Aluno.tamanho;
-		for (int i = 0; i < registros; i++) {
-			ByteBuffer buffer = ByteBuffer.allocate(Aluno.tamanho);
-			this.channel.read(buffer, i * Aluno.tamanho);
-			a = Conversor.toAluno(buffer);
-			if (a.getMatric() == matric)
-				indice = i;
-		}
-		if (indice == -1) {
+		long position = this.getPosition(matric);
+		if (position == -1) {
 			return false;
-		} else if (indice == 0 && registros == 1) {
+		} else if(position == 0 && registros == 1) {
 			this.channel.truncate(0);
 			return true;
-		} else if (indice + 1 == registros) {
+		} else if (position == this.channel.size() - Aluno.tamanho) {
 			this.channel.truncate(this.channel.size() - Aluno.tamanho);
 			return true;
 		} else {
 			ByteBuffer buff = ByteBuffer.allocate(Aluno.tamanho);
 			this.channel.read(buff, this.channel.size() - Aluno.tamanho);
 			buff.flip();
-			this.channel.write(buff, indice * Aluno.tamanho);
+			this.channel.write(buff, position);
 			this.channel.truncate(this.channel.size() - Aluno.tamanho);
 			return true;
 		}
+	}
+	
+	private long getPosition(long matric) throws IOException {
+		this.channel.position(0);
+		long matricula;
+		int registros = (int) this.channel.size() / Aluno.tamanho;
+		for (int i = 0; i < registros; i++) {
+			ByteBuffer buffer = ByteBuffer.allocate(8);
+			this.channel.read(buffer, i * Aluno.tamanho);
+			buffer.flip();
+			matricula = buffer.getLong();
+			if (matricula == matric) {
+				return i * Aluno.tamanho;
+			}
+		}
+		return -1;
 	}
 }
