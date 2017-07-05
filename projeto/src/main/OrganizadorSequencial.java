@@ -52,12 +52,14 @@ public class OrganizadorSequencial implements IOrganizador {
 					if (a.getMatric() < tmp_a.getMatric()) {
 						for (int j = registros; j > i; j--) {
 							ByteBuffer buffer_read = ByteBuffer.allocate(Aluno.tamanho);
-							channel.read(buffer_read, (j * Aluno.tamanho) - Aluno.tamanho);
-							buffer_leitura.flip();
-							channel.write(buffer_read, (j * Aluno.tamanho));
+							this.channel.read(buffer_read, (j * Aluno.tamanho) - Aluno.tamanho);
+							buffer_read.flip();
+							this.channel.write(buffer_read, j * Aluno.tamanho);
 						}
-						channel.write(buffer, i * Aluno.tamanho);
+						this.channel.write(buffer, i * Aluno.tamanho);
 						break;
+					} else if (i+1 == registros) {
+						this.channel.write(buffer, this.channel.size());
 					}
 				}
 			}
@@ -66,14 +68,37 @@ public class OrganizadorSequencial implements IOrganizador {
 
 	@Override
 	public Aluno getAluno(long matric) throws IOException {
-		// TODO Auto-generated method stub
+		long position = this.getPosition(matric);
+		if (position != -1) {
+			ByteBuffer buffer = ByteBuffer.allocate(Aluno.tamanho);
+			this.channel.read(buffer, position);
+			return Conversor.toAluno(buffer);
+		}
 		return null;
 	}
 
 	@Override
 	public boolean delAluno(long matric) throws IOException {
-		// TODO Auto-generated method stub
-		return false;
+		int registros = (int) this.channel.size() / Aluno.tamanho;
+		long position = this.getPosition(matric);
+		if (position == -1) {
+			return false;
+		} else if(position == 0 && registros == 1) {
+			this.channel.truncate(0);
+			return true;
+		} else if (position == this.channel.size() - Aluno.tamanho) {
+			this.channel.truncate(this.channel.size() - Aluno.tamanho);
+			return true;
+		} else {
+			for (int i = (int) (position / Aluno.tamanho); i < registros; i++) {
+				ByteBuffer buffer_read = ByteBuffer.allocate(Aluno.tamanho);
+				this.channel.read(buffer_read, (i * Aluno.tamanho) + Aluno.tamanho);
+				buffer_read.flip();
+				this.channel.write(buffer_read, i * Aluno.tamanho);
+			}
+			this.channel.truncate(this.channel.size() - Aluno.tamanho);
+			return true;
+		}
 	}
 
 }

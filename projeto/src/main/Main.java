@@ -16,12 +16,14 @@ public class Main {
 		
 		Aluno a = new Aluno();
 		a.setCurso((short) 170);
-		a.setEmail("eloi_matos@hotmail.com");
-		a.setEnde("Rua B");
-		a.setMatric(25);
-		a.setNome("Eloi Morais de Matos");
+		a.setEmail("jose@hotmail.com");
+		a.setEnde("Rua J");
+		a.setMatric(40);
+		a.setNome("José");
 		
-		org.addAluno(a);
+
+		org.delAluno(40);
+		
 	}
 
 }
