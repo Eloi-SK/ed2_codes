@@ -20,6 +20,27 @@ public class OrganizadorSequencial implements IOrganizador {
 		this.channel = raf.getChannel();
 	}
 	
+	private long getPositionBin(long matric) throws IOException {
+		long matricula;
+		int registros = (int) this.channel.size() / Aluno.tamanho;
+		int esq = 0; int dir = registros - 1; int meio;
+		while (esq <= dir) {
+			meio = (esq + dir) / 2;
+			ByteBuffer buffer = ByteBuffer.allocate(8);
+			this.channel.read(buffer, meio * Aluno.tamanho);
+			buffer.flip();
+			matricula = buffer.getLong();
+			if (matricula == matric)
+				return meio * Aluno.tamanho;
+			if (matricula < matric) {
+				esq = meio + 1;
+			} else {
+				dir = meio - 1;
+			}
+		}
+		return -1;
+	}
+	
 	private long getPosition(long matric) throws IOException {
 		this.channel.position(0);
 		long matricula;
