@@ -1,4 +1,4 @@
-package main;
+package organizadores;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.nio.channels.FileChannel;
 
 import entidades.Aluno;
 import interfaces.IOrganizador;
-import util.Conversor;
+import helper.Conversor;
 
 public class OrganizadorSequencial implements IOrganizador {
 

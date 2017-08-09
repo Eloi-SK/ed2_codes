@@ -67,5 +67,4 @@ public class Aluno {
 		this.curso = curso;
 	}
 	
-	
 }

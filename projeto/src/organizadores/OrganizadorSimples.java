@@ -1,4 +1,4 @@
-package main;
+package organizadores;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,7 +6,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import util.Conversor;
+import helper.Conversor;
 import entidades.Aluno;
 import interfaces.IOrganizador;
 
@@ -73,4 +73,5 @@ public class OrganizadorSimples implements IOrganizador {
 		}
 		return -1;
 	}
+
 }
