@@ -12,19 +12,22 @@ import interfaces.IOrganizador;
 
 public class OrganizadorBrent implements IOrganizador {
 
-	private static final int MAX = 97;
+	private long MAX;
 	private static final int VAZIO = 0;
 	private static final int DELETADO = -1;
 	
 	private FileChannel channel;
 	
-	public OrganizadorBrent(String fileName) throws IOException {
+	public OrganizadorBrent(String fileName, long tableSize) throws IOException {
+		MAX = tableSize;
 		File file = new File(fileName);
 		RandomAccessFile raf = new RandomAccessFile(file, "rw");
 		this.channel = raf.getChannel();
+		if (this.channel.size() == 0)
+			this.createFile();
 	}
 	
-	private long chave(long matric) {
+	private long hash(long matric) {
 		return matric % MAX;
 	}
 	
@@ -37,75 +40,130 @@ public class OrganizadorBrent implements IOrganizador {
 		this.channel.read(b, pos);
 		b.flip();
 		long matric = b.getLong();
-		if (matric == VAZIO ||matric == DELETADO) {
+		if (matric == VAZIO || matric == DELETADO) {
 			return true;
 		}
 		return false;
 	}
 	
-	private
+	private long getPosition(long matric) throws IOException {
+		long hash, inc, pos;
+		
+		hash = this.hash(matric);
+		inc = this.inc(matric);
+		
+		for(pos = hash; !this.isEmpty(pos * Aluno.tamanho); pos = (pos + inc) % MAX) {
+			if (this.compareMatric(pos * Aluno.tamanho, matric)) {
+				return pos * Aluno.tamanho;
+			}
+		}
+		
+		return -1;
+	}
+	
+	private boolean compareMatric(long pos, long matric) throws IOException {
+		ByteBuffer b = ByteBuffer.allocate(8);
+		this.channel.read(b, pos);
+		b.flip();
+		long m = b.getLong();
+		if (matric == m) {
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean isEmpty(long pos) throws IOException {
+		ByteBuffer b = ByteBuffer.allocate(8);
+		this.channel.read(b, pos);
+		b.flip();
+		long matric = b.getLong();
+		if (matric == VAZIO) {
+			return true;
+		}
+		return false;
+	}
 	
 	private void createFile() throws IOException {
-		ByteBuffer buffer = ByteBuffer.allocate(Aluno.tamanho * MAX);
-		this.channel.write(buffer);
+		for(long i = 0; i < MAX; i++) {
+			ByteBuffer buffer = ByteBuffer.allocate(Aluno.tamanho);
+			this.channel.write(buffer, i * Aluno.tamanho);
+		}
 	}
 	
 	@Override
 	public void addAluno(Aluno a) throws IOException {
-		long hash, inc, pos, p2, pos2, pos_file, pos2_file;
-		int depth, depth2, i;
+		long hash, inc, inc2, pos, pos2, pos_file, pos2_file;
+		int custo, custo2;
 		
-		if (this.channel.size() == 0) {
-			this.createFile();
+		hash = this.hash(a.getMatric());
+		inc = this.inc(a.getMatric());
+		
+		ByteBuffer buff = ByteBuffer.allocate(Aluno.tamanho);
+		
+		custo = 0;
+		pos = hash;
+		pos_file = pos * Aluno.tamanho;
+		while (!isEmptyOrDeleted(pos_file)) {
+			custo++;
+			pos = (pos + inc) % MAX;
+			pos_file = pos * Aluno.tamanho;
+		}		
+		if (custo < 2) {
+			ByteBuffer b = Conversor.toByteBuffer(a);
+			this.channel.write(b, pos_file);
+			return;
 		} else {
-			hash = this.chave(a.getMatric());
-			inc = this.inc(a.getMatric());
-			
-			for (pos = hash, depth = 0, pos_file = pos * Aluno.tamanho; !isEmptyOrDeleted(pos_file); pos = (pos + inc) % MAX, pos_file = pos * Aluno.tamanho) {
-				depth++;
-			}
-			
-			if (depth < 2) {
-				ByteBuffer b = Conversor.toByteBuffer(a);
-				this.channel.write(b, pos_file);
-				return;
-			}
-			ByteBuffer buff = ByteBuffer.allocate(Aluno.tamanho);
-			
-			for (i = 0, pos = hash, pos_file = pos * Aluno.tamanho; i < depth; i++, pos = (hash + inc) % MAX, pos_file = pos * Aluno.tamanho) {
+			pos = hash;
+			for (int i = 0; i < custo; i++) {
+				pos_file = pos * Aluno.tamanho;
 				this.channel.read(buff, pos_file);
 				buff.flip();
 				Aluno a_ = Conversor.toAluno(buff);
-				p2 = this.inc(a_.getMatric());
-				
-				for (depth2 = 0, pos2 = (pos + p2) % MAX, pos2_file = pos2 * Aluno.tamanho; !isEmptyOrDeleted(pos2_file) && depth2 <= i; depth2++, pos2 = (pos2 + p2) % MAX, pos2_file = pos2 * Aluno.tamanho) {
-					if (depth2 <= i) {
-						this.channel.write(buff, pos2_file);
-						break;
-					}
+				inc2 = this.inc(a_.getMatric());
+				custo2 = 0;
+				pos2 = (pos + inc2) % MAX;
+				pos2_file = pos2 * Aluno.tamanho;
+				while (custo2 <= i && !isEmptyOrDeleted(pos2_file)) {
+					pos2 = (pos2 + inc2) % MAX;
+					pos2_file = pos2 * Aluno.tamanho;
+					custo2++;
+				}
+				if (custo2 <= i) {
+					this.channel.write(Conversor.toByteBuffer(a_), pos2_file);
+					break;
 				}
 			}
-			buff = Conversor.toByteBuffer(a);
-			this.channel.write(buff, pos_file);
 		}
-
+		ByteBuffer b = Conversor.toByteBuffer(a);
+		this.channel.write(b, pos_file);
 	}
 
 	@Override
 	public Aluno getAluno(long matric) throws IOException {
-		long hash, inc, pos, pos_file;
-		
-		hash = this.chave(matric);
-		inc = this.inc(matric);
-		
-		for (pos = hash, pos_file = pos * Aluno.tamanho; )
+		long pos = this.getPosition(matric);
+		if (pos >= 0) {
+			ByteBuffer b = ByteBuffer.allocate(Aluno.tamanho);
+			b.flip();
+			this.channel.read(b, pos);
+			return Conversor.toAluno(b);
+		}
 		return null;
 	}
 
 	@Override
 	public boolean delAluno(long matric) throws IOException {
-		// TODO Auto-generated method stub
+		long pos = this.getPosition(matric);
+		if ( pos >= 0) {
+			ByteBuffer b = ByteBuffer.allocate(Aluno.tamanho);
+			this.channel.read(b, pos);
+			b.flip();
+			Aluno a = Conversor.toAluno(b);
+			a.setMatric(-1);
+			b = Conversor.toByteBuffer(a);
+			this.channel.write(b, pos);
+			return true;
+		}
 		return false;
 	}
-
+	
 }
